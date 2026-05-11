@@ -501,21 +501,6 @@ window.openEmpModal = (id = null) => {
     document.getElementById('modal-emp').style.display = 'block';
 };
 
-    try {
-        if (window.editingId) {
-            // Si on est en mode modification
-            await updateDoc(doc(db, "employees", window.editingId), data);
-        } else {
-            // Si c'est un nouveau salarié
-            await addDoc(empRef, data);
-        }
-        closeModals();
-    } catch (e) {
-        console.error("Erreur Firebase : ", e);
-        alert("Erreur lors de l'enregistrement");
-    }
-};
-
 onSnapshot(empRef, (snapshot) => {
     const tbody = document.getElementById('table-body');
     tbody.innerHTML = "";
