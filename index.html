@@ -516,13 +516,13 @@ onSnapshot(empRef, (snapshot) => {
 
         effectif++;
 
-        const salaireBase = rates[emp.grade] || 0;
+const salaireBase = Number(rates[emp.grade]) || 0;
 
-        const heures = emp.heures ? Number(emp.heures) : 12;
+const heures = Number(emp.heures) || 12;
 
-        const bonus = emp.bonus || 0;
+const bonus = Number(emp.bonus) || 0;
 
-        const salaireTotal = (heures * salaireBase) + bonus;
+const salaireTotal = (heures * salaireBase) + bonus;
 
         totalSalariale += salaireTotal;
 
@@ -540,10 +540,10 @@ onSnapshot(empRef, (snapshot) => {
             <td>${emp.grade}</td>
 
             <td>
-                ${salaireTotal.toLocaleString()} $
+                ${Number(salaireTotal).toLocaleString('fr-FR')} $
                 <br>
                 <small style="color:gray;">
-                    ${heures}h × ${salaireBase.toLocaleString()} $
+                    ${Number(salaireBase).toLocaleString('fr-FR')} $
                 </small>
             </td>
 
@@ -608,42 +608,6 @@ window.deleteEmployee = async (id) => {
     const p_list = { "aucune": 0, "assiduite": 50000, "exceptionnelle": 60000, "risque": 40000 };
     await updateDoc(doc(db, "employees", id), { prime_type: type, bonus: p_list[type] });
   };
-
-  function refresh() {
-    const tbody = document.getElementById('table-body');
-    if(!tbody) return;
-    tbody.innerHTML = '';
-    let totalPayroll = 0; let totalPrimes = 0;
-
-    window.employees.forEach(e => {
-      const sal = (e.heures * rates[e.grade]) + (e.bonus || 0);
-      totalPayroll += sal;
-      if(e.prime_type !== 'aucune') totalPrimes++;
-
-      tbody.innerHTML += `
-        <tr>
-          <td><strong>${e.nom.toUpperCase()} ${e.prenom}</strong></td>
-          <td><span style="color:var(--primary)">${e.grade}</span></td>
-          <td>${e.rib || "-"}</td>
-          <td>${sal.toLocaleString()} $</td>
-          <td>
-            <select class="select-prime" onchange="updatePrime('${e.id}', this.value)">
-              <option value="aucune" ${e.prime_type === 'aucune' ? 'selected' : ''}>---</option>
-              <option value="assiduite" ${e.prime_type === 'assiduite' ? 'selected' : ''}>Assiduité</option>
-              <option value="exceptionnelle" ${e.prime_type === 'exceptionnelle' ? 'selected' : ''}>Exceptionnelle</option>
-            </select>
-          </td>
-          <td>
-            <button class="btn btn-sm" onclick="openEmpModal('${e.id}')"><i class='bx bxs-edit'></i></button>
-            <button class="btn btn-sm" style="background:#fee2e2; color:var(--danger)" onclick="deleteEmployee('${e.id}')"><i class='bx bxs-trash'></i></button>
-          </td>
-        </tr>`;
-    });
-
-    document.getElementById('stat-total-money').innerText = totalPayroll.toLocaleString() + " $";
-    document.getElementById('stat-total-staff').innerText = window.employees.length;
-    document.getElementById('stat-total-promo').innerText = totalPrimes;
-  }
 
   window.updateGenSelect = () => {
     const sel = document.getElementById('gen-select-emp');
