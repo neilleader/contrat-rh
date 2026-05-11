@@ -430,33 +430,34 @@ const firebaseConfig = {
   };
 
 window.openEmpModal = (id = null) => {
-  window.editingId = id;
+    window.editingId = id;
 
-  if(id) {
-    const e = window.employees.find(x => x.id === id);
+    document.getElementById('modal-title').innerText =
+        id ? "Modifier Collaborateur" : "Fiche Collaborateur";
 
-    document.getElementById('f-nom').value = e.nom || "";
-    document.getElementById('f-prenom').value = e.prenom || "";
-    document.getElementById('f-naissance').value = e.naissance || "";
-    document.getElementById('f-grade').value = e.grade || "";
-    document.getElementById('f-heures').value = e.heures || "";
-    document.getElementById('f-tel').value = e.tel || "";
-    document.getElementById('f-rib').value = e.rib || "";
+    if(id) {
+        const e = window.employees.find(x => x.id === id);
 
-  } else {
+        document.getElementById('f-nom').value = e.nom || "";
+        document.getElementById('f-prenom').value = e.prenom || "";
+        document.getElementById('f-naissance').value = e.naissance || "";
+        document.getElementById('f-grade').value = e.grade || "";
+        document.getElementById('f-heures').value = e.heures || "";
+        document.getElementById('f-tel').value = e.tel || "";
+        document.getElementById('f-rib').value = e.rib || "";
 
-    [
-      'f-nom',
-      'f-prenom',
-      'f-naissance',
-      'f-heures',
-      'f-tel',
-      'f-rib'
-    ].forEach(i => document.getElementById(i).value = '');
+    } else {
 
-  }
+        document.getElementById('f-nom').value = "";
+        document.getElementById('f-prenom').value = "";
+        document.getElementById('f-naissance').value = "";
+        document.getElementById('f-grade').selectedIndex = 0;
+        document.getElementById('f-heures').value = "";
+        document.getElementById('f-tel').value = "";
+        document.getElementById('f-rib').value = "";
+    }
 
-  document.getElementById('modal-emp').style.display = 'block';
+    document.getElementById('modal-emp').style.display = 'block';
 };
 
 // --- AJOUTE CE CODE DANS TON SCRIPT MODULE ---
@@ -520,40 +521,101 @@ window.saveEmp = async () => {
     }
 };
 
-// Ecouter les changements en temps réel pour afficher le tableau
 onSnapshot(empRef, (snapshot) => {
     const tbody = document.getElementById('table-body');
     tbody.innerHTML = "";
+
     let totalSalariale = 0;
     let effectif = 0;
+    let totalPrimes = 0;
 
-    snapshot.forEach((doc) => {
-        const emp = doc.data();
-        const id = doc.id;
+    snapshot.forEach((docSnap) => {
+
+        const emp = docSnap.data();
+        const id = docSnap.id;
+
         effectif++;
-        
+
         const salaireBase = rates[emp.grade] || 0;
-        totalSalariale += salaireBase;
+
+        // CALCUL HEURES × TAUX
+        const heures = Number(emp.heures) || 0;
+
+        const bonus = emp.bonus || 0;
+
+        const salaireTotal = (heures * salaireBase) + bonus;
+
+        totalSalariale += salaireTotal;
+
+        if(emp.prime_type && emp.prime_type !== "aucune") {
+            totalPrimes++;
+        }
 
         const tr = document.createElement('tr');
+
         tr.innerHTML = `
-            <td>${emp.prenom} ${emp.nom}</td>
-            <td>${emp.grade}</td>
-            <td>${salaireBase.toLocaleString()} $</td>
-            <td>${emp.primes || 0} $</td>
             <td>
-                <button class="btn-action" onclick="deleteEmployee('${id}')" style="color:red; background:none; border:none; cursor:pointer;">
+                <strong>${emp.prenom} ${emp.nom}</strong>
+            </td>
+
+            <td>${emp.grade}</td>
+
+            <td>
+                ${salaireTotal.toLocaleString()} $
+                <br>
+                <small style="color:gray;">
+                    ${heures}h × ${salaireBase.toLocaleString()} $
+                </small>
+            </td>
+
+            <td>
+                ${bonus.toLocaleString()} $
+            </td>
+
+            <td style="display:flex; gap:8px;">
+
+                <button
+                    onclick="openEmpModal('${id}')"
+                    style="
+                        background:#dbeafe;
+                        border:none;
+                        padding:8px 10px;
+                        border-radius:8px;
+                        cursor:pointer;
+                    ">
+                    <i class='bx bx-edit'></i>
+                </button>
+
+                <button
+                    onclick="deleteEmployee('${id}')"
+                    style="
+                        background:#fee2e2;
+                        border:none;
+                        padding:8px 10px;
+                        border-radius:8px;
+                        cursor:pointer;
+                        color:red;
+                    ">
                     <i class='bx bx-trash'></i>
                 </button>
+
             </td>
-            <td style="font-family: monospace;">${emp.rib || '---'}</td>
+
+            <td style="font-family: monospace;">
+                ${emp.rib || '---'}
+            </td>
         `;
+
         tbody.appendChild(tr);
     });
 
-    // Mise à jour des stats
     document.getElementById('stat-total-staff').innerText = effectif;
-    document.getElementById('stat-total-money').innerText = totalSalariale.toLocaleString() + " $";
+
+    document.getElementById('stat-total-money').innerText =
+        totalSalariale.toLocaleString() + " $";
+
+    document.getElementById('stat-total-promo').innerText =
+        totalPrimes;
 });
 
 // Fonction pour supprimer
