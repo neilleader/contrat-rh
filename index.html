@@ -518,8 +518,7 @@ onSnapshot(empRef, (snapshot) => {
 
         const salaireBase = rates[emp.grade] || 0;
 
-        // CALCUL HEURES × TAUX
-        const heures = Number(emp.heures) || 0;
+        const heures = emp.heures ? Number(emp.heures) : 12;
 
         const bonus = emp.bonus || 0;
 
@@ -724,7 +723,7 @@ Fait au Palais de Justice, le ${new Date().toLocaleDateString()}`;
         prenom: document.getElementById('f-prenom').value,
         naissance: document.getElementById('f-naissance').value,
         grade: document.getElementById('f-grade').value,
-        heures: Number(document.getElementById('f-heures').value),
+        heures: Number(document.getElementById('f-heures').value) || 12,
         tel: document.getElementById('f-tel').value,
         rib: document.getElementById('f-rib').value,
         bonus: 0,
