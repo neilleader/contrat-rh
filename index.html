@@ -459,34 +459,109 @@ window.openEmpModal = (id = null) => {
   document.getElementById('modal-emp').style.display = 'block';
 };
 
-  window.closeModals = () => document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+// --- AJOUTE CE CODE DANS TON SCRIPT MODULE ---
 
-window.saveEmp = async () => {
-
-  const data = {
-    nom: document.getElementById('f-nom').value,
-    prenom: document.getElementById('f-prenom').value,
-    naissance: document.getElementById('f-naissance').value,
-    grade: document.getElementById('f-grade').value,
-    heures: parseFloat(document.getElementById('f-heures').value) || 0,
-    tel: document.getElementById('f-tel').value,
-    rib: document.getElementById('f-rib').value
-  };
-
-  if(window.editingId) {
-    await updateDoc(doc(db, "employees", window.editingId), data);
-  } else {
-    await addDoc(empRef, {
-      ...data,
-      bonus: 0,
-      prime_type: 'aucune'
-    });
-  }
-
-  window.closeModals();
+// Fonction pour fermer les modaux
+window.closeModals = () => {
+    document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+    window.editingId = null;
 };
 
-  window.deleteEmp = async (id) => { if(confirm("Supprimer ce collaborateur ?")) await deleteDoc(doc(db, "employees", id)); };
+// Fonction pour ouvrir la modal de création
+window.openEmpModal = () => {
+    document.getElementById('modal-title').innerText = "Fiche Collaborateur";
+    // On vide les champs pour un nouveau salarié
+    document.getElementById('f-nom').value = "";
+    document.getElementById('f-prenom').value = "";
+    document.getElementById('f-naissance').value = "";
+    document.getElementById('f-heures').value = "";
+    document.getElementById('f-tel').value = "";
+    document.getElementById('f-rib').value = "";
+    document.getElementById('modal-emp').style.display = 'block';
+};
+
+// LA FONCTION DE SAUVEGARDE (Celle qui règle ton problème de RIB)
+window.saveEmp = async () => {
+    // 1. On récupère TOUTES les valeurs des inputs
+    const nom = document.getElementById('f-nom').value;
+    const prenom = document.getElementById('f-prenom').value;
+    const naissance = document.getElementById('f-naissance').value;
+    const grade = document.getElementById('f-grade').value;
+    const heures = document.getElementById('f-heures').value;
+    const tel = document.getElementById('f-tel').value;
+    const rib = document.getElementById('f-rib').value; // Récupération du RIB
+
+    // 2. On vérifie que le nom et le prénom ne sont pas vides
+    if(!nom || !prenom) return alert("Veuillez remplir au moins le nom et le prénom.");
+
+    const data = {
+        nom: nom,
+        prenom: prenom,
+        naissance: naissance,
+        grade: grade,
+        heures: heures,
+        tel: tel,
+        rib: rib, // On enregistre le RIB ici
+        primes: 0
+    };
+
+    try {
+        if (window.editingId) {
+            // Si on est en mode modification
+            await updateDoc(doc(db, "employees", window.editingId), data);
+        } else {
+            // Si c'est un nouveau salarié
+            await addDoc(empRef, data);
+        }
+        closeModals();
+    } catch (e) {
+        console.error("Erreur Firebase : ", e);
+        alert("Erreur lors de l'enregistrement");
+    }
+};
+
+// Ecouter les changements en temps réel pour afficher le tableau
+onSnapshot(empRef, (snapshot) => {
+    const tbody = document.getElementById('table-body');
+    tbody.innerHTML = "";
+    let totalSalariale = 0;
+    let effectif = 0;
+
+    snapshot.forEach((doc) => {
+        const emp = doc.data();
+        const id = doc.id;
+        effectif++;
+        
+        const salaireBase = rates[emp.grade] || 0;
+        totalSalariale += salaireBase;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${emp.prenom} ${emp.nom}</td>
+            <td>${emp.grade}</td>
+            <td>${salaireBase.toLocaleString()} $</td>
+            <td>${emp.primes || 0} $</td>
+            <td>
+                <button class="btn-action" onclick="deleteEmployee('${id}')" style="color:red; background:none; border:none; cursor:pointer;">
+                    <i class='bx bx-trash'></i>
+                </button>
+            </td>
+            <td style="font-family: monospace;">${emp.rib || '---'}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // Mise à jour des stats
+    document.getElementById('stat-total-staff').innerText = effectif;
+    document.getElementById('stat-total-money').innerText = totalSalariale.toLocaleString() + " $";
+});
+
+// Fonction pour supprimer
+window.deleteEmployee = async (id) => {
+    if(confirm("Supprimer ce salarié ?")) {
+        await deleteDoc(doc(db, "employees", id));
+    }
+};
 
   window.updatePrime = async (id, type) => {
     const p_list = { "aucune": 0, "assiduite": 50000, "exceptionnelle": 60000, "risque": 40000 };
