@@ -522,7 +522,7 @@ const heures = Number(emp.heures) || 12;
 
 const bonus = Number(emp.bonus) || 0;
 
-const salaireTotal = (heures * salaireBase) + bonus;
+const salaireTotal = salaireBase + bonus;
 
         totalSalariale += salaireTotal;
 
